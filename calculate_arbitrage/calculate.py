@@ -22,7 +22,8 @@ def build_lps(subgraph, lp_per_dex, block_number=-1):
     lps = []
     for dex_name in subgraph:
         try:
-            amms, block_number = get_largest_pairs(dex_name, lp_per_dex, block_number)
+            amms, block_number = get_largest_pairs(
+                dex_name, lp_per_dex, block_number)
             lps += amms
         except:
             try:
@@ -50,40 +51,40 @@ def path_analysis(path):
     reserve_token_info = DB.get_token_info()
     if len(path) == 2:
         amt_in, profit, between_lp_amts = fast_path_two_arb(
-                                            float(path[0]["reserve_in"]),
-                                            float(path[0]["reserve_out"]),
-                                            float(path[1]["reserve_in"]),
-                                            float(path[1]["reserve_out"]))
+            float(path[0]["reserve_in"]),
+            float(path[0]["reserve_out"]),
+            float(path[1]["reserve_in"]),
+            float(path[1]["reserve_out"]))
     elif len(path) == 3:
         amt_in, profit, between_lp_amts = fast_path_three_arb(
-                                            float(path[0]["reserve_in"]),
-                                            float(path[0]["reserve_out"]),
-                                            float(path[1]["reserve_in"]),
-                                            float(path[1]["reserve_out"]),
-                                            float(path[2]["reserve_in"]),
-                                            float(path[2]["reserve_out"]))
+            float(path[0]["reserve_in"]),
+            float(path[0]["reserve_out"]),
+            float(path[1]["reserve_in"]),
+            float(path[1]["reserve_out"]),
+            float(path[2]["reserve_in"]),
+            float(path[2]["reserve_out"]))
     elif len(path) == 4:
         amt_in, profit, between_lp_amts = fast_path_four_arb(
-                                            float(path[0]["reserve_in"]),
-                                            float(path[0]["reserve_out"]),
-                                            float(path[1]["reserve_in"]),
-                                            float(path[1]["reserve_out"]),
-                                            float(path[2]["reserve_in"]),
-                                            float(path[2]["reserve_out"]),
-                                            float(path[3]["reserve_in"]),
-                                            float(path[3]["reserve_out"]))
+            float(path[0]["reserve_in"]),
+            float(path[0]["reserve_out"]),
+            float(path[1]["reserve_in"]),
+            float(path[1]["reserve_out"]),
+            float(path[2]["reserve_in"]),
+            float(path[2]["reserve_out"]),
+            float(path[3]["reserve_in"]),
+            float(path[3]["reserve_out"]))
     elif len(path) == 5:
         amt_in, profit, between_lp_amts = fast_path_five_arb(
-                                            float(path[0]["reserve_in"]),
-                                            float(path[0]["reserve_out"]),
-                                            float(path[1]["reserve_in"]),
-                                            float(path[1]["reserve_out"]),
-                                            float(path[2]["reserve_in"]),
-                                            float(path[2]["reserve_out"]),
-                                            float(path[3]["reserve_in"]),
-                                            float(path[3]["reserve_out"]),
-                                            float(path[4]["reserve_in"]),
-                                            float(path[4]["reserve_out"]))
+            float(path[0]["reserve_in"]),
+            float(path[0]["reserve_out"]),
+            float(path[1]["reserve_in"]),
+            float(path[1]["reserve_out"]),
+            float(path[2]["reserve_in"]),
+            float(path[2]["reserve_out"]),
+            float(path[3]["reserve_in"]),
+            float(path[3]["reserve_out"]),
+            float(path[4]["reserve_in"]),
+            float(path[4]["reserve_out"]))
     else:
         logger.warn(f"Path length {len(path)} not supported.")
         return
@@ -116,13 +117,15 @@ def calculate(subgraphs, eth_block_num=-1, poly_block_num=-1):
     builder = path_builder()
 
     ethereum_dex_subgraphs = subgraphs["ethereum"]
-    polygon_dex_subgraphs = subgraphs["polygon"]
+    #polygon_dex_subgraphs = subgraphs["polygon"]
     logger.debug("Building lps")
-    ethereum_lps = build_lps(ethereum_dex_subgraphs, LP_PER_DEX_ETH, eth_block_num)
-    polygon_lps = build_lps(polygon_dex_subgraphs, LP_PER_DEX_POLY, poly_block_num)
-    
+    ethereum_lps = build_lps(ethereum_dex_subgraphs,
+                             LP_PER_DEX_ETH, eth_block_num)
+    #polygon_lps = build_lps(polygon_dex_subgraphs, LP_PER_DEX_POLY, poly_block_num)
+
     logger.debug("Calculating Paths")
-    paths = builder.cross_chain_paths(ethereum_lps, polygon_lps, MAX_PATH_LENGTH)
+    #paths = builder.cross_chain_paths(ethereum_lps, polygon_lps, MAX_PATH_LENGTH)
+    paths = builder.cross_dex_paths(ethereum_lps, MAX_PATH_LENGTH)
     logger.debug(f"Number of paths: {len(paths)}")
 
     # DB.add_paths(paths)

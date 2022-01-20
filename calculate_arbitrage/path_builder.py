@@ -1,3 +1,6 @@
+from logzero import logger
+
+
 class path_builder:
     def __init__(self):
         self.reserve_tokens = {
@@ -32,14 +35,38 @@ class path_builder:
                 "LINK": "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39".lower()
             }
         }
+        self.eth_to_eth = {self.reserve_tokens["ethereum"][ticker]                           : self.reserve_tokens["ethereum"][ticker] for ticker in self.reserve_tokens["ethereum"]}
+        #self.eth_to_poly = {self.reserve_tokens["ethereum"][ticker]: self.reserve_tokens["polygon"][ticker] for ticker in self.reserve_tokens["ethereum"]}
+        #self.poly_to_eth = {self.reserve_tokens["polygon"][ticker]: self.reserve_tokens["ethereum"][ticker] for ticker in self.reserve_tokens["ethereum"]}
 
-        self.eth_to_poly = {self.reserve_tokens["ethereum"][ticker]: self.reserve_tokens["polygon"][ticker] for ticker in self.reserve_tokens["ethereum"]}
-        self.poly_to_eth = {self.reserve_tokens["polygon"][ticker]: self.reserve_tokens["ethereum"][ticker] for ticker in self.reserve_tokens["ethereum"]}
+    def cross_dex_paths(self, ethereum_amm_list, max_path_len=4):
+        ethereum_reserve_paths = self._reserve_paths(
+            ethereum_amm_list, max_path_len - 1, "ethereum")
+        logger.debug(
+            f"Number of ethereum reserve paths: {len(ethereum_reserve_paths)}")
+        candidate_paths = []
 
-    def cross_chain_paths(self, ethereum_amm_list, polygon_amm_list, max_path_len = 4):
+        for ethereum_start in self.reserve_tokens["ethereum"].values():
+            for ethereum_path in ethereum_reserve_paths[ethereum_start.lower()]:
+                # Check that the ethereum_path path end is equal to the ethereum beginning
+                for inter_path in ethereum_reserve_paths[self.eth_to_eth[ethereum_path[-1]["token_out_id"].lower()]]:
+
+                    # Check that the inter path end is equal to the ethereum beginning
+                    if ethereum_start.lower() == self.eth_to_eth[inter_path[-1]["token_out_id"].lower()]:
+
+                        # Make sure the path is not longer than the set max
+                        if len(inter_path) + len(ethereum_path) <= max_path_len:
+                            candidate_paths.append(
+                                inter_path + ethereum_path)
+
+        return candidate_paths
+
+    def cross_chain_paths(self, ethereum_amm_list, polygon_amm_list, max_path_len=4):
         # Start by getting all possible paths between our reserve tokens for each chain
-        ethereum_reserve_paths = self._reserve_paths(ethereum_amm_list, max_path_len - 1, "ethereum")
-        polygon_reserve_paths = self._reserve_paths(polygon_amm_list, max_path_len - 1, "polygon")
+        ethereum_reserve_paths = self._reserve_paths(
+            ethereum_amm_list, max_path_len - 1, "ethereum")
+        polygon_reserve_paths = self._reserve_paths(
+            polygon_amm_list, max_path_len - 1, "polygon")
 
         candidate_paths = []
 
@@ -54,7 +81,8 @@ class path_builder:
 
                         # Make sure the path is not longer than the set max
                         if len(polygon_path) + len(ethereum_path) <= max_path_len:
-                            candidate_paths.append(polygon_path + ethereum_path)
+                            candidate_paths.append(
+                                polygon_path + ethereum_path)
 
         for polygon_start in self.reserve_tokens["polygon"].values():
             for polygon_path in polygon_reserve_paths[polygon_start.lower()]:
@@ -67,7 +95,8 @@ class path_builder:
 
                         # Make sure the path is not longer than the set max
                         if len(ethereum_path) + len(polygon_path) <= max_path_len:
-                            candidate_paths.append(ethereum_path + polygon_path)
+                            candidate_paths.append(
+                                ethereum_path + polygon_path)
 
         return candidate_paths
 
@@ -87,9 +116,11 @@ class path_builder:
             else:
                 adjacency_list[0][amm["token0"]["id"].lower()] = [edge]
 
-            reverse_edge = {"end": amm["token0"]["id"].lower(), "amm_list": [amm]}
+            reverse_edge = {"end": amm["token0"]
+                            ["id"].lower(), "amm_list": [amm]}
             if amm["token1"]["id"].lower() in adjacency_list[0]:
-                adjacency_list[0][amm["token1"]["id"].lower()].append(reverse_edge)
+                adjacency_list[0][amm["token1"]
+                                  ["id"].lower()].append(reverse_edge)
             else:
                 adjacency_list[0][amm["token1"]["id"].lower()] = [reverse_edge]
 
@@ -160,15 +191,17 @@ class path_builder:
                         if simple_edge["amm_list"][0] not in edge["amm_list"] and \
                            simple_edge["end"] != edge["end"]:
 
-                           new_edge = {
-                               "end": edge["end"],
-                               "amm_list": simple_edge["amm_list"] + edge["amm_list"]
-                           }
+                            new_edge = {
+                                "end": edge["end"],
+                                "amm_list": simple_edge["amm_list"] + edge["amm_list"]
+                            }
 
-                           adjacency_list[path_len + 1][simple_edge["end"]].append(new_edge)
+                            adjacency_list[path_len +
+                                           1][simple_edge["end"]].append(new_edge)
 
-                           if edge["end"] in reserve_tokens.values() and simple_edge["end"] in reserve_tokens.values():
-                                reserve_paths[simple_edge["end"]].append(new_edge)
+                            if edge["end"] in reserve_tokens.values() and simple_edge["end"] in reserve_tokens.values():
+                                reserve_paths[simple_edge["end"]].append(
+                                    new_edge)
 
         # Format it for interfacing with front end
         reserve_path_formatted = {key: [] for key in reserve_paths}
